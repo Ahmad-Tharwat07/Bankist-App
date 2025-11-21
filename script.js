@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
@@ -8,50 +8,49 @@
 // Data
 
 const account1 = {
-  owner: 'Jonas Schmedtmann',
-  movements: [200, 455.23, -306.5, 25000, -642.21, -133.9, 79.97, 1300],
-  interestRate: 1.2, // %
-  pin: 1111,
+	owner: "Jonas Schmedtmann",
+	movements: [200, 455.23, -306.5, 25000, -642.21, -133.9, 79.97, 1300],
+	interestRate: 1.2, // %
+	pin: 1111,
 
-  movementsDates: [
-    '2019-11-18T21:31:17.178Z',
-    '2019-12-23T07:42:02.383Z',
-    '2020-01-28T09:15:04.904Z',
-    '2020-04-01T10:17:24.185Z',
-    '2020-05-08T14:11:59.604Z',
-    '2020-05-27T17:01:17.194Z',
-    '2020-07-11T23:36:17.929Z',
-    '2020-07-12T10:51:36.790Z',
-  ],
-  currency: 'EUR',
-  locale: 'pt-PT', // de-DE
+	movementsDates: [
+		"2019-11-18T21:31:17.178Z",
+		"2019-12-23T07:42:02.383Z",
+		"2020-01-28T09:15:04.904Z",
+		"2020-04-01T10:17:24.185Z",
+		"2020-05-08T14:11:59.604Z",
+		"2020-05-27T17:01:17.194Z",
+		"2020-07-11T23:36:17.929Z",
+		"2020-07-12T10:51:36.790Z",
+	],
+	currency: "EUR",
+	locale: "pt-PT", // de-DE
 };
 
 const account2 = {
-  owner: 'Jessica Davis',
-  movements: [5000, 3400, -150, -790, -3210, -1000, 8500, -30],
-  interestRate: 1.5,
-  pin: 2222,
+	owner: "Jessica Davis",
+	movements: [5000, 3400, -150, -790, -3210, -1000, 8500, -30],
+	interestRate: 1.5,
+	pin: 2222,
 
-  movementsDates: [
-    '2019-11-01T13:15:33.035Z',
-    '2019-11-30T09:48:16.867Z',
-    '2019-12-25T06:04:23.907Z',
-    '2020-01-25T14:18:46.235Z',
-    '2020-02-05T16:33:06.386Z',
-    '2020-04-10T14:43:26.374Z',
-    '2020-06-25T18:49:59.371Z',
-    '2020-07-26T12:01:20.894Z',
-  ],
-  currency: 'USD',
-  locale: 'en-US',
+	movementsDates: [
+		"2019-11-01T13:15:33.035Z",
+		"2019-11-30T09:48:16.867Z",
+		"2019-12-25T06:04:23.907Z",
+		"2020-01-25T14:18:46.235Z",
+		"2020-02-05T16:33:06.386Z",
+		"2020-04-10T14:43:26.374Z",
+		"2020-06-25T18:49:59.371Z",
+		"2020-07-26T12:01:20.894Z",
+	],
+	currency: "USD",
+	locale: "en-US",
 };
 
 const accounts = [account1, account2];
 
 /////////////////////////////////////////////////
 // Elements
-"use strict";
 /*
 	js
 	1111
@@ -139,21 +138,48 @@ const createUsernames = function (accs) {
 };
 createUsernames(accounts);
 
-const displayMovements = function (movements, sort = false) {
+const displayMovements = function (acc, sort = false) {
 	// first, clear the container
 	containerMovements.innerHTML = "";
+	const monthArr = [
+		"Jan",
+		"Feb",
+		"Mar",
+		"Apr",
+		"May",
+		"Jun",
+		"Jul",
+		"Aug",
+		"Sep",
+		"Oct",
+		"Nov",
+		"Dec",
+	];
 
-	const movs = sort ? movements.slice().sort((a, b) => a - b) : movements;
+	const combinedMovesDates = acc.movements.map((mov, i) => 
+	({
+		movement: mov,
+		movementDate : acc.movementsDates.at(i)
+	}));
 
-	movs.forEach((mov, i) => {
-		const movType = mov > 0 ? "deposit" : "withdrawal";
+	if(sort)
+		combinedMovesDates.sort((a, b) => a.movement - b.movement);
+		
+	combinedMovesDates.forEach((obj, i) => {
+		const {movement, movementDate} = obj;
+		const movType = movement > 0 ? "deposit" : "withdrawal";
+		const date = new Date(movementDate);
+		const day = `${date.getDate()}`.padStart(2, 0);
+		const month = monthArr[date.getMonth()];
+		const year = date.getFullYear();
+		const format = `${day} ${month} ${year}`;
 
 		const movHtml = `
         <div class="movements__row">
           <div class="movements__type movements__type--${movType}">
           ${i + 1}  ${movType}</div>
-          <div class="movements__date">3 days ago</div>
-          <div class="movements__value">${mov.toFixed(2)}€</div>
+          <div class="movements__date">${format}</div>
+          <div class="movements__value">${movement.toFixed(2)}€</div>
         </div>`;
 
 		containerMovements.insertAdjacentHTML("afterbegin", movHtml);
@@ -186,14 +212,45 @@ const calcDisplaySummary = function (acc) {
 	labelSumInterest.textContent = `${interest.toFixed(2)}€`;
 };
 
+const displayDate = function () {
+	const now = new Date();
+	const day = `${now.getDate()}`.padStart(2, 0);
+	const month = `${now.getMonth() + 1}`.padStart(2, 0);
+	const year = now.getFullYear();
+	const hour = `${now.getHours()}`.padStart(2, 0);
+	const min = `${now.getMinutes()}`.padStart(2, 0);
+	const format = `${day}/${month}/${year}, ${hour}:${min}`;
+	labelDate.textContent = format;
+};
+
 const updateUI = function (acc) {
 	calcDisplayBlanace(acc);
-	displayMovements(acc.movements);
+	displayMovements(acc);
 	calcDisplaySummary(acc);
+	displayDate();
+
 	labelWelcome.textContent = `Welcome back, ${acc.owner.split(" ")[0]}`;
 	containerApp.style.opacity = 100;
 	inputLoginUsername.value = inputLoginPin.value = "";
 	inputLoginPin.blur();
+};
+
+const transferAmount = function (username, amount) {
+	const receiver = accounts.find((acc) => acc.username == username);
+	const now = new Date().toISOString();
+
+	if (receiver?.username === cnt_acc.username)
+		console.log("can't transfer to yourself.");
+	else if (receiver) {
+		receiver.movements.push(amount);
+		cnt_acc.movements.push(-1 * amount);
+		receiver.movementsDates.push(now);
+		cnt_acc.movementsDates.push(now);
+
+		inputTransferTo.value = inputTransferAmount.value = "";
+		updateUI(cnt_acc);
+		console.log("DONE!");
+	} else console.log("No user found ‼️");
 };
 
 const login = function (username, pin) {
@@ -202,6 +259,11 @@ const login = function (username, pin) {
 	if (cnt_acc?.pin.toString() === pin) updateUI(cnt_acc);
 	else console.log("User not found ‼️");
 };
+
+///////////////////////////////////////////////////////////
+// Even Handlers
+
+// Fake logged in
 
 btnLogin.addEventListener("click", (e) => {
 	e.preventDefault();
@@ -218,25 +280,10 @@ btnTransfer.addEventListener("click", (e) => {
 	// If user is logged in
 	if (cnt_acc) {
 		const balance = cnt_acc.balance;
-
 		if (balance >= amount && amount > 0) transferAmount(username, amount);
 		else console.log("NO SUFFICIENT FUND OR FUND IS 0/NEGATIVE‼️‼️");
 	} else console.log("You are not logged in 🗣️🔥");
 });
-
-const transferAmount = function (username, amount) {
-	const receiver = accounts.find((acc) => acc.username == username);
-
-	if (receiver?.username === cnt_acc.username)
-		console.log("can't transfer to yourself.");
-	else if (receiver) {
-		receiver.movements.push(amount);
-		cnt_acc.movements.push(-1 * amount);
-		inputTransferTo.value = inputTransferAmount.value = "";
-		updateUI(cnt_acc);
-		console.log("DONE!");
-	} else console.log("No user found ‼️");
-};
 
 btnLoan.addEventListener("click", (e) => {
 	e.preventDefault();
@@ -245,7 +292,11 @@ btnLoan.addEventListener("click", (e) => {
 	const condition = cnt_acc.movements.some((mov) => mov >= amount * 0.1);
 	if (amount > 0 && condition) {
 		cnt_acc.movements.push(amount);
+		cnt_acc.movementsDates.push(new Date().toISOString());
 		updateUI(cnt_acc);
+	} else {
+		if (!condition) console.log("Can't request this amount");
+		else console.log("Amount must be positive integer 🗣️🗣️");
 	}
 
 	inputLoanAmount.value = "";
@@ -270,7 +321,7 @@ btnClose.addEventListener("click", function (e) {
 let sorted = false;
 btnSort.addEventListener("click", function (e) {
 	e.preventDefault();
-	displayMovements(cnt_acc.movements, !sorted);
+	displayMovements(cnt_acc, !sorted);
 	sorted = !sorted;
 });
 
