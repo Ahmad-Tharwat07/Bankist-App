@@ -138,7 +138,7 @@ const createUsernames = function (accs) {
 };
 createUsernames(accounts);
 
-const formatMovementDate = function (date) {
+const formatMovementDate = function (local, date) {
 	const calcDaysPassed = (date1, date2) =>
 		Math.round(Math.abs(date2 - date1) / (1000 * 60 * 60 * 24));
 
@@ -147,27 +147,20 @@ const formatMovementDate = function (date) {
 	if (daysPassed === 0) return "Today";
 	if (daysPassed === 1) return "Yesterday";
 	if (daysPassed <= 7) return `${daysPassed} days ago`;
-	
-	const monthArr = [
-		"Jan",
-		"Feb",
-		"Mar",
-		"Apr",
-		"May",
-		"Jun",
-		"Jul",
-		"Aug",
-		"Sep",
-		"Oct",
-		"Nov",
-		"Dec",
-	];
-	const day = `${date.getDate()}`.padStart(2, 0);
-	const month = monthArr[date.getMonth()];
-	const year = date.getFullYear();
-	const format = `${day} ${month} ${year}`;
-	return format;
+
+	// const day = `${date.getDate()}`.padStart(2, 0);
+	// const month = monthArr[date.getMonth()];
+	// const year = date.getFullYear();
+	// const format = `${day} ${month} ${year}`;
+	return new Intl.DateTimeFormat(local).format(date);
 };
+
+const formatCur = function(value, locale, currency){
+	return new Intl.NumberFormat(locale, {
+			style: "currency",
+			currency: currency,
+		}).format(value);
+}
 
 const displayMovements = function (acc, sort = false) {
 	// first, clear the container
@@ -185,34 +178,36 @@ const displayMovements = function (acc, sort = false) {
 		const movType = movement > 0 ? "deposit" : "withdrawal";
 		const date = new Date(movementDate);
 
-		const format = formatMovementDate(date);
+		const dateFormat = formatMovementDate(cnt_acc.locale, date);
+		const movFormat = formatCur(obj.movement, cnt_acc.locale, cnt_acc.currency)
 
 		const movHtml = `
         <div class="movements__row">
           <div class="movements__type movements__type--${movType}">
           ${i + 1}  ${movType}</div>
-          <div class="movements__date">${format}</div>
-          <div class="movements__value">${movement.toFixed(2)}€</div>
+          <div class="movements__date">${dateFormat}</div>
+          <div class="movements__value">${movFormat}</div>
         </div>`;
 
 		containerMovements.insertAdjacentHTML("afterbegin", movHtml);
 	});
 };
+
 const calcDisplayBlanace = function (acc) {
 	acc.balance = acc.movements.reduce((acc, mov) => acc + mov, 0);
-	labelBalance.textContent = `${acc.balance.toFixed(2)}€`;
+	labelBalance.textContent = formatCur(acc.balance, acc.locale, acc.currency);
 };
 
 const calcDisplaySummary = function (acc) {
 	const incomes = acc.movements
 		.filter((mov) => mov > 0)
 		.reduce((acc, mov) => acc + mov, 0);
-	labelSumIn.textContent = `${incomes.toFixed(2)}€`;
+	labelSumIn.textContent = formatCur(incomes, acc.locale, acc.currency);
 
 	const out = acc.movements
 		.filter((mov) => mov < 0)
 		.reduce((acc, mov) => acc + mov, 0);
-	labelSumOut.textContent = `${Math.abs(out).toFixed(2)}€`;
+	labelSumOut.textContent = formatCur(Math.abs(out), acc.locale, acc.currency);
 
 	const interest = acc.movements
 		.filter((mov) => mov > 0)
@@ -222,7 +217,7 @@ const calcDisplaySummary = function (acc) {
 			return int >= 1;
 		})
 		.reduce((acc, int) => acc + int, 0);
-	labelSumInterest.textContent = `${interest.toFixed(2)}€`;
+	labelSumInterest.textContent = formatCur(interest, acc.locale, acc.currency);
 };
 
 const displayDate = function () {
@@ -271,6 +266,19 @@ const login = function (username, pin) {
 
 	if (cnt_acc?.pin.toString() === pin) updateUI(cnt_acc);
 	else console.log("User not found ‼️");
+
+	const now = new Date();
+	const options = {
+		hour: "numeric",
+		minute: "numeric",
+		day: "numeric",
+		month: "numeric",
+		year: "numeric",
+	};
+	labelDate.textContent = new Intl.DateTimeFormat(
+		cnt_acc.locale,
+		options
+	).format(now);
 };
 
 ///////////////////////////////////////////////////////////
