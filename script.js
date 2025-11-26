@@ -125,7 +125,7 @@ const inputLoanAmount = document.querySelector(".form__input--loan-amount");
 const inputCloseUsername = document.querySelector(".form__input--user");
 const inputClosePin = document.querySelector(".form__input--pin");
 
-let cnt_acc;
+let cnt_acc, timer;
 
 const createUsernames = function (accs) {
 	accs.forEach(function (acc) {
@@ -155,12 +155,12 @@ const formatMovementDate = function (local, date) {
 	return new Intl.DateTimeFormat(local).format(date);
 };
 
-const formatCur = function(value, locale, currency){
+const formatCur = function (value, locale, currency) {
 	return new Intl.NumberFormat(locale, {
-			style: "currency",
-			currency: currency,
-		}).format(value);
-}
+		style: "currency",
+		currency: currency,
+	}).format(value);
+};
 
 const displayMovements = function (acc, sort = false) {
 	// first, clear the container
@@ -179,7 +179,11 @@ const displayMovements = function (acc, sort = false) {
 		const date = new Date(movementDate);
 
 		const dateFormat = formatMovementDate(cnt_acc.locale, date);
-		const movFormat = formatCur(obj.movement, cnt_acc.locale, cnt_acc.currency)
+		const movFormat = formatCur(
+			obj.movement,
+			cnt_acc.locale,
+			cnt_acc.currency
+		);
 
 		const movHtml = `
         <div class="movements__row">
@@ -195,7 +199,11 @@ const displayMovements = function (acc, sort = false) {
 
 const calcDisplayBlanace = function (acc) {
 	acc.balance = acc.movements.reduce((acc, mov) => acc + mov, 0);
-	labelBalance.textContent = formatCur(acc.balance, acc.locale, acc.currency);
+	labelBalance.textContent = formatCur(
+		acc.balance,
+		acc.locale,
+		acc.currency
+	);
 };
 
 const calcDisplaySummary = function (acc) {
@@ -207,7 +215,11 @@ const calcDisplaySummary = function (acc) {
 	const out = acc.movements
 		.filter((mov) => mov < 0)
 		.reduce((acc, mov) => acc + mov, 0);
-	labelSumOut.textContent = formatCur(Math.abs(out), acc.locale, acc.currency);
+	labelSumOut.textContent = formatCur(
+		Math.abs(out),
+		acc.locale,
+		acc.currency
+	);
 
 	const interest = acc.movements
 		.filter((mov) => mov > 0)
@@ -217,7 +229,11 @@ const calcDisplaySummary = function (acc) {
 			return int >= 1;
 		})
 		.reduce((acc, int) => acc + int, 0);
-	labelSumInterest.textContent = formatCur(interest, acc.locale, acc.currency);
+	labelSumInterest.textContent = formatCur(
+		interest,
+		acc.locale,
+		acc.currency
+	);
 };
 
 const displayDate = function () {
@@ -261,6 +277,32 @@ const transferAmount = function (username, amount) {
 	} else console.log("No user found ‼️");
 };
 
+const startLogOutTimer = function () {
+	// set time to 5 minutes
+	let time = 120;
+	const tick = function (){
+		const min = String(Math.trunc(time / 60)).padStart(2, 0);
+		const sec = String(time % 60).padStart(2, 0);
+	
+		labelTimer.textContent = `${min}:${sec}`;
+		
+		if (!time){ 
+			clearInterval(timer);
+			labelWelcome.textContent = 'Log in to get started';
+			containerApp.style.opacity = 0;
+			cnt_acc = undefined;
+			console.log("Logged Out");
+		}
+		
+		--time;
+	} 
+	
+	tick();
+	const timer = setInterval(tick, 1000);
+	
+	return timer;
+};
+
 const login = function (username, pin) {
 	cnt_acc = accounts.find((acc) => acc.username === username);
 
@@ -279,6 +321,16 @@ const login = function (username, pin) {
 		cnt_acc.locale,
 		options
 	).format(now);
+
+	/*
+		This is a solution to the weird behavior of logging out from an account before the timer is 0.
+		
+		It keeps switching between setInterval functions sent to the web API that displays the current counter.
+		
+		Each logging has to have one and only one timer.
+	*/
+	if(timer) clearInterval(timer)
+	timer = startLogOutTimer();
 };
 
 ///////////////////////////////////////////////////////////
@@ -302,6 +354,9 @@ btnTransfer.addEventListener("click", (e) => {
 		if (balance >= amount && amount > 0) transferAmount(username, amount);
 		else console.log("NO SUFFICIENT FUND OR FUND IS 0/NEGATIVE‼️‼️");
 	} else console.log("You are not logged in 🗣️🔥");
+	
+	clearInterval(timer);
+	timer = startLogOutTimer();
 });
 
 btnLoan.addEventListener("click", (e) => {
@@ -310,15 +365,20 @@ btnLoan.addEventListener("click", (e) => {
 	const amount = Math.floor(Number(inputLoanAmount.value));
 	const condition = cnt_acc.movements.some((mov) => mov >= amount * 0.1);
 	if (amount > 0 && condition) {
-		cnt_acc.movements.push(amount);
-		cnt_acc.movementsDates.push(new Date().toISOString());
-		updateUI(cnt_acc);
+		setTimeout(function () {
+			cnt_acc.movements.push(amount);
+			cnt_acc.movementsDates.push(new Date().toISOString());
+			updateUI(cnt_acc);
+			console.log("Loan Approved ✅");
+		}, 2500);
 	} else {
 		if (!condition) console.log("Can't request this amount");
 		else console.log("Amount must be positive integer 🗣️🗣️");
 	}
 
 	inputLoanAmount.value = "";
+	clearInterval(timer);
+	timer = startLogOutTimer();
 });
 
 btnClose.addEventListener("click", function (e) {
@@ -359,3 +419,33 @@ const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
 /////////////////////////////////////////////////
 
 let arr = ["a", "b", "c", "d", "e"];
+
+// setInterval(() => {
+// 	const now = new Date()
+// 	console.log(`${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`)
+
+// }, 1000);
+
+// setInterval(() => {
+//   const now = new Date();
+
+//   // Convert number to String -> Pad with '0' until length is 2
+//   const hours = String(now.getHours()).padStart(2, '0');
+//   const minutes = String(now.getMinutes()).padStart(2, '0');
+//   const seconds = String(now.getSeconds()).padStart(2, '0');
+
+//   console.log(`${hours}:${minutes}:${seconds}`);
+// }, 1000);
+
+// const formatter = new Intl.DateTimeFormat('en-US', {
+//   hour: '2-digit',
+//   minute: '2-digit',
+//   second: '2-digit',
+//   hour12: false // Use 24-hour format
+// });
+
+// setInterval(() => {
+//   const now = new Date();
+//   // \r moves cursor to start, just like hitting 'Home' on keyboard
+//   process.stdout.write('\r' + formatter.format(now));
+// }, 1000);
